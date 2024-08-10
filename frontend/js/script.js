@@ -1,4 +1,14 @@
-let websocket;
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.API_KEY_GEMINI);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+async function getInstructions(input) {
+    const prompt = "Olá! Vou fornecer um texto contendo instruções de movimentação para um personagem. Este personagem pode se mover para a direita, esquerda, cima ou baixo. Sua tarefa é interpretar o texto e retornar um conjunto claro de instruções. Cada instrução deve especificar a direção do movimento e a quantidade de passos que o personagem deve dar. Armazene as instruções em um array em que cada índice do array deve conter a direção e a quantidade de passos. Segue abaixo as instruções: \n" + input;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return text;
+}
 
 const login = document.querySelector(".login");
 const loginForm = login.querySelector(".login_form");
@@ -13,7 +23,6 @@ const canvas = document.querySelector("#canvas");
 var cnv = document.querySelector("canvas");
 var ctx = cnv.getContext("2d");
 var WIDTH = cnv.width, HEIGHT = cnv.height;
-var LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
 var mvLeft = mvUp = mvRight = mvDown = false;
 var tileSize = 32;
 var tileSrcSize = 96;
@@ -26,8 +35,6 @@ var img = new Image();
 img.src = "images/img.png"
 img.addEventListener("load", loadCanvas, false);
 
-
-
 var walls = []
 
 var player = {
@@ -35,7 +42,7 @@ var player = {
     y: tileSize + 2,
     width: 24,
     height: 32,
-    speed: 2,
+    speed: 1,
     srcX: 0,
     srcY: tileSrcSize,
     countAnim: 0
@@ -43,6 +50,7 @@ var player = {
 
 var maze = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1],
@@ -58,7 +66,9 @@ var maze = [
     [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ];
 
@@ -77,7 +87,7 @@ for (var row in maze) {
     }
 }
 
-function blockRectangle(player, wall) {
+const blockRectangle = (player, wall) => {
     var distX = (player.x + player.width / 2) - (wall.x + wall.width / 2);
     var distY = (player.y + player.height / 2) - (wall.y + wall.height / 2);
 
@@ -97,30 +107,6 @@ function blockRectangle(player, wall) {
 
 function resetDirection() {
     mvLeft = mvUp = mvRight = mvDown = false;
-}
-
-window.addEventListener("keyup", keyupHandler, false);
-
-function keyupHandler(e) {
-    var key = e.keyCode;
-    switch (key) {
-        case LEFT:
-            mvLeft = true;
-            break;
-        case RIGHT:
-            mvRight = true;
-            break;
-        case UP:
-            mvUp = true;
-            break;
-        case DOWN:
-            mvDown = true;
-            break;
-    }
-    for (let i = 0; i < 15; i++) {
-        update();
-        render();
-    }
 }
 
 function update() {
@@ -155,11 +141,10 @@ function update() {
         var wall = walls[i];
         blockRectangle(player, wall);
     }
-
 }
 
 const toMove = () => {
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 17; i++) {
         update();
         render();
     }
@@ -217,7 +202,6 @@ function render() {
 function loop() {
     update();
     render();
-    resetDirection();
     requestAnimationFrame(loop, cnv);
 }
 
@@ -272,76 +256,47 @@ const scrollScreen = () => {
     })
 }
 
-const processContent = async (content) => {
-    if(content !== "Ande 14 vezes para baixo"){
-        for(let i = 0; i < 14; i++){
-            mvDown = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 2; i++){
-            mvRight = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 14; i++){
-            mvUp = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 13; i++){
-            mvRight = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 14; i++){
-            mvDown = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 4; i++){
-            mvLeft = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 10; i++){
-            mvUp = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 5; i++){
-            mvLeft = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 6; i++){
-            mvDown = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 3; i++){
-            mvRight = true;
-            toMove();
-            await sleep(200);
-        }
-        for(let i = 0; i < 5; i++){
-            mvDown = true;
-            toMove();
-            await sleep(200);
-        }
+const validatorInstruction = (instruction) => {
+    if (instruction.includes('cima')) {
+        mvUp = true;
+    } else if (instruction.includes('baixo')) {
+        mvDown = true;
+    } else if (instruction.includes('direita')) {
+        mvRight = true;
+    } else if (instruction.includes('esquerda')) {
+        mvLeft = true;
     }
+}
+
+const processContent = async (instructions) => {
+    console.log(instructions);
+    /*for (const instruction of instructions){
+        validatorInstruction(instruction);
+        let length = getRepetition(instruction);
+        console.log(length);
+        for(let i = 0; i < length; i++){
+            toMove();
+            await sleep(200);
+        }
+        resetDirection();
+        await sleep(200);
+    }*/
 };
 
-const processMessage = ({ data }) => {
-    const { userId, userName, userColor, content } = JSON.parse(data);
+const processMessage = async ( data ) => {
+    console.log(data);
+    const { userId, userName, userColor, content } = data;
 
-    const message = userId === user.id
+    /*const message = userId === user.id
         ? createMessageSelfElement(content)
-        : createMessageOtherElement(content, userName, userColor);
-
+        : createMessageOtherElement(content, userName, userColor);*/
+    
+    const message = createMessageSelfElement(content)
     chatMessages.appendChild(message);
     scrollScreen();
-    processContent(content);
+    const instructions = await getInstructions(content);
+    await sleep(200);
+    processContent(instructions);
 }
 
 const handleLogin = (event) => {
@@ -353,9 +308,6 @@ const handleLogin = (event) => {
     login.style.display = "none";
     chat.style.display = "flex";
     canvas.style.display = "flex";
-
-    websocket = new WebSocket("ws://localhost:8090");
-    websocket.onmessage = processMessage
 }
 
 const sendMessage = (event) => {
@@ -368,7 +320,7 @@ const sendMessage = (event) => {
         content: chatInput.value
     };
 
-    websocket.send(JSON.stringify(message));
+    processMessage(message);
     chatInput.value = "";
 
 }

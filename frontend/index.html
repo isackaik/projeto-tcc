@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
-    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <title>Chat</title>
 </head>
 
@@ -26,22 +26,21 @@
             <canvas id="canvas" width="672" height="672"></canvas>
         </section>
 
-        <section class="chat">
-            <section class="chat_messages">
+            <section class="chat">
+                <section class="chat_messages">
+                </section>
+                <form class="chat_form">
+                    <input type="text" class="chat_input" placeholder="Digite uma mensagem" required />
+                    <button type="submit" class="chat_button">
+                        <span class="material-symbols-outlined">
+                            send
+                        </span>
+                    </button> <!--adicionar imagem -->
+                </form>
             </section>
-
-            <form class="chat_form">
-                <input type="text" class="chat_input" placeholder="Digite uma mensagem" required />
-                <button type="submit" class="chat_button">
-                    <span class="material-symbols-outlined">
-                        send
-                    </span>
-                </button> <!--adicionar imagem -->
-            </form>
-        </section>
     </section>
 
-    <script src="./js/script.js"></script>
+    <script src="./public/app.js"></script>
 </body>
 
 </html>

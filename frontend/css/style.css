@@ -97,8 +97,8 @@ body {
     gap: 10px;
     position: fixed;
     bottom: 0;
-    left: 0;
-    width: 100%;
+    left: 672px;
+    width: 56%;
 }
 
 .chat_input {
@@ -157,4 +157,6 @@ body {
     display: none;
     background: none;
     background-color: white;
+    top: 0;
+    position: fixed;
 }
