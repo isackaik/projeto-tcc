@@ -1,9 +1,20 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY_GEMINI);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 async function getInstructions(input) {
-    const prompt = "Olá! Vou fornecer um texto contendo instruções de movimentação para um personagem. Este personagem pode se mover para a direita, esquerda, cima ou baixo. Sua tarefa é interpretar o texto e retornar um conjunto claro de instruções. Cada instrução deve especificar a direção do movimento e a quantidade de passos que o personagem deve dar. Armazene as instruções em um array em que cada índice do array deve conter a direção e a quantidade de passos. Segue abaixo as instruções: \n" + input;
+    const prompt = "Olá! Vou fornecer um texto contendo instruções de movimentação para um personagem. "
+        + "Este personagem pode se mover para a direita, esquerda, tras ou frente. "
+        + "Sua tarefa é interpretar o texto e retornar um conjunto claro de instruções. "
+        + "Cada instrução deve especificar a direcao do movimento e a quantidade de passos "
+        + "que o personagem deve dar. Quando não conseguir interpretar a direção, informe \"frente\"."
+        + "E quando não conseguir interpretar a quantidade de passos, informe 0. "
+        + "a ignore e envie apenas o que conseguir interpretar. "
+        + "Armazene as instruções em um formato json que deve conter " +
+        + "a direção e a quantidade de passos. "
+        + "As instruções deve vir no seguinte formato: "
+        + "[{\"direcao\": \"baixo\", \"passos\": 10}, {\"direcao\": \"cima\", \"passos\": 5}]. "
+        + "Segue as instruções: \n" + input;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
@@ -24,6 +35,8 @@ var cnv = document.querySelector("canvas");
 var ctx = cnv.getContext("2d");
 var WIDTH = cnv.width, HEIGHT = cnv.height;
 var mvLeft = mvUp = mvRight = mvDown = false;
+
+var lastDirection = 'D'; // U = UP, L = LEFT, D = DOWN, R = RIGHT
 var tileSize = 32;
 var tileSrcSize = 96;
 
@@ -34,15 +47,18 @@ const loadCanvas = () => {
 var img = new Image();
 img.src = "images/img.png"
 img.addEventListener("load", loadCanvas, false);
+var imgFlag = new Image();
+imgFlag.src = "images/flag.png"
+imgFlag.addEventListener("load", loadCanvas, false);
 
 var walls = []
 
 var player = {
     x: tileSize + 2,
-    y: tileSize + 2,
+    y: tileSize + 1,
     width: 24,
     height: 32,
-    speed: 1,
+    speed: 2,
     srcX: 0,
     srcY: tileSrcSize,
     countAnim: 0
@@ -68,7 +84,7 @@ var maze = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1],
     [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ];
 
@@ -132,9 +148,6 @@ function update() {
             player.countAnim = 0;
         }
         player.srcX = Math.floor(player.countAnim / 5) * player.width;
-    } else {
-        player.srcX = 0;
-        player.countAnim = 0;
     }
 
     for (var i in walls) {
@@ -143,11 +156,13 @@ function update() {
     }
 }
 
-const toMove = () => {
-    for (let i = 0; i < 17; i++) {
+const move = async () => {
+    setMove();
+    for (let i = 0; i < 16; i++) {
         update();
         render();
     }
+    resetDirection();
 }
 
 function sleep(ms) {
@@ -257,45 +272,79 @@ const scrollScreen = () => {
 }
 
 const validatorInstruction = (instruction) => {
-    if (instruction.includes('cima')) {
-        mvUp = true;
-    } else if (instruction.includes('baixo')) {
-        mvDown = true;
-    } else if (instruction.includes('direita')) {
-        mvRight = true;
-    } else if (instruction.includes('esquerda')) {
-        mvLeft = true;
+    switch(instruction){
+       case 'tras' : setDirectionGoBack(); break;
+       case 'esquerda' : setDirectionGoLeft(); break;
+       case 'direita' : setDirectionGoRight(); break;
+    }
+}
+
+const setDirectionGoBack = () => {
+    switch(lastDirection){
+        case 'U' : lastDirection = 'D'; break;
+        case 'D' : lastDirection = 'U'; break;
+        case 'R' : lastDirection = 'L'; break;
+        case 'L' : lastDirection = 'R'; break;
+    }
+}
+
+const setDirectionGoLeft = () => {
+    switch(lastDirection){
+        case 'U' : lastDirection = 'L'; break;
+        case 'D' : lastDirection = 'R'; break;
+        case 'R' : lastDirection = 'U'; break;
+        case 'L' : lastDirection = 'D'; break;
+    }
+}
+
+const setDirectionGoRight = () => {
+    switch(lastDirection){
+        case 'U' : lastDirection = 'R'; break;
+        case 'D' : lastDirection = 'L'; break;
+        case 'R' : lastDirection = 'D'; break;
+        case 'L' : lastDirection = 'U'; break;
+    }
+}
+
+const setMove = () => {
+    switch(lastDirection){
+        case 'U' : mvUp = true; break;
+        case 'D' : mvDown = true; break;
+        case 'R' : mvRight = true; break;
+        case 'L' : mvLeft = true; break;
     }
 }
 
 const processContent = async (instructions) => {
-    console.log(instructions);
-    /*for (const instruction of instructions){
-        validatorInstruction(instruction);
-        let length = getRepetition(instruction);
-        console.log(length);
-        for(let i = 0; i < length; i++){
-            toMove();
-            await sleep(200);
+    const textoTratado = instructions.replaceAll("`", "").replaceAll("json", "").trim();
+    console.log(textoTratado);
+    movimentos = JSON.parse(textoTratado);
+    for (let i = 0; i < movimentos.length; i++) {
+        const movimento = movimentos[i];
+        validatorInstruction(movimento.direcao);
+        for (let j = 0; j < movimento.passos; j++) {
+            move();
+            await sleep(100);
         }
         resetDirection();
-        await sleep(200);
-    }*/
+        player.srcX = 0;
+        player.countAnim = 0;
+    }
 };
 
-const processMessage = async ( data ) => {
+const processMessage = async (data) => {
     console.log(data);
-    const { userId, userName, userColor, content } = data;
+    const { content } = data;
 
-    /*const message = userId === user.id
-        ? createMessageSelfElement(content)
-        : createMessageOtherElement(content, userName, userColor);*/
-    
-    const message = createMessageSelfElement(content)
+    const message = createMessageSelfElement(content);
     chatMessages.appendChild(message);
-    scrollScreen();
+    
     const instructions = await getInstructions(content);
+    const result = createMessageOtherElement(instructions, "Servidor", getRandomColor());
+    chatMessages.appendChild(result);
+    
     await sleep(200);
+    scrollScreen();
     processContent(instructions);
 }
 
