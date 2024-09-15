@@ -156,7 +156,7 @@ body {
 #canvas {
     display: none;
     background: none;
-    background-color: white;
+    background-color: #535151;
     top: 0;
     position: fixed;
 }

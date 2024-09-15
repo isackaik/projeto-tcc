@@ -73,7 +73,7 @@ var maze = [
     [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
@@ -182,11 +182,15 @@ function render() {
             var columnIndex = parseInt(column);
 
             if (rowIndex !== maze.length - 1 && columnIndex !== maze[rowIndex].length - 1) {
-                ctx.drawImage(
-                    img, tile * tileSrcSize, 0, tileSize, tileSize, x, y, tileSize, tileSize
-                );
+                if(maze[row][column] === 2){
+                    ctx.drawImage(imgFlag, 0, 0, tileSize, tileSize, x, y, tileSize, tileSize);
+                } else {
+                    ctx.drawImage(
+                        img, tile * tileSrcSize, 0, tileSize, tileSize, x, y, tileSize, tileSize
+                    );
+                }
             } else {
-                ctx.fillStyle = 'black';
+                ctx.fillStyle = 'white';
                 ctx.font = '20px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -340,8 +344,8 @@ const processMessage = async (data) => {
     chatMessages.appendChild(message);
     
     const instructions = await getInstructions(content);
-    const result = createMessageOtherElement(instructions, "Servidor", getRandomColor());
-    chatMessages.appendChild(result);
+    //const result = createMessageOtherElement(instructions, "Servidor", getRandomColor());
+    //chatMessages.appendChild(result);
     
     await sleep(200);
     scrollScreen();
